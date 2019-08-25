@@ -1,0 +1,19 @@
+{
+  "name": "socialnetwork-api",
+  "version": "1.0.0",
+  "description": "A basic socialnetwork api Please run npm install",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/El-Nazy/socialnetwork-api.git"
+  },
+  "author": "Emmanuel Ngene",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/El-Nazy/socialnetwork-api/issues"
+  },
+  "homepage": "https://github.com/El-Nazy/socialnetwork-api#readme"
+}
