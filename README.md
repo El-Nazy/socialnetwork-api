@@ -1,3 +1,3 @@
-# socialnetwork-api
-A basic socialnetwork api
+# student-api
+A basic student api
 Please run npm install

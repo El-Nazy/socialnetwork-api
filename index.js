@@ -1,5 +1,5 @@
 const http = require("http");
-var url = require("url");
+const url = require("url");
 const { parse } = require("querystring");
 const promisify = require("util").promisify;
 const fs = require("fs");
@@ -7,6 +7,7 @@ const open = promisify(fs.open);
 const writeFile = promisify(fs.writeFile);
 const readFile = promisify(fs.readFile);
 const close = promisify(fs.close);
+const unlink = promisify(fs.unlink);
 
 const port = 3000;
 const host = "localhost";
@@ -40,16 +41,84 @@ function handlePOST(req, res) {
     });
 
     req.on("end", () => {
+        let lastID;
         let fd;
-        body = JSON.parse(body);
+        readFile(`./.data${req.url}/lastID.txt`, "utf-8")
+        .then(data => {
+            lastID = Number(data);
+            return open(`./.data${req.url}/${++lastID}.json`, 'wx+')
+        })
+        .then(fileDescriptor => {
+            fd = fileDescriptor
+            writeFile(`./.data${req.url}/lastID.txt`, lastID);
+            return writeFile(fd, body);
+        })
+        .then(() => {
+            res.statusCode = 200;
+            res.setHeader("Content-Type", "text/plain");
+            res.end(`User created with id = ${lastID}`);
+            close(fd);
+        })
+        .catch(err => {
+            res.statusCode = 404;
+            res.setHeader("Content-Type", "text/plain");
+            res.end("Invalid request")
+            console.log(err);
+        })
+    })
+}
+
+function handleGET(req, res) {
+    let fd;
+    open(`./.data${req.url}.json`, 'r+')
+    .then(fileDescriptor => {
+        fd = fileDescriptor
+        return readFile(fd, "utf-8")
+    })
+    .then(data => {
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "application/json");
+        res.end(data);
+        console.log(data);
+        close(fd);
+    })
+    .catch(err => {
+        res.statusCode = 404;
+        res.setHeader("Content-Type", "text/plain");
+        res.end("Not found")
+        console.log(err);
+    })
+}
+
+function handlePUT(req, res) {
+    let body = ""
+
+    req.on("data", chunk => {
+        body += chunk.toString();
+    });
+
+    req.on("end", () => {
+        let fd;
+        body = parsejsonObject(body);
         open(`./.data${req.url}.json`, 'r+')
         .then(fileDescriptor => {
             fd = fileDescriptor
             return readFile(fd, "utf-8")
         })
         .then(data => {
-            data = JSON.parse(data);
-            data[(Object.keys(data).length + 1) + ""] = body;
+            data = parsejsonObject(data);
+            // Check if the property-names of Object sent tally with Object requested
+            for (key of Object.keys(body)) {
+                if (!data.hasOwnProperty(key)) {
+                    throw new Error(`Invalid property name "${key}"`);
+                }
+            }
+            
+            // Update all properties of data with values from PUT request body
+            for (key of Object.keys(body)) {
+                data[key] = body[key];
+            }
+            
             var stringData = JSON.stringify(data, null, "\t");
             console.log(stringData);
             return writeFile(fd, stringData);
@@ -60,72 +129,38 @@ function handlePOST(req, res) {
         .then(() => {
             res.statusCode = 200;
             res.setHeader("Content-Type", "text/plain");
-            res.end(JSON.stringify(body, null, "\t"));
+            res.end(`Successfully updated user with id = ${req.url.split("/")[2]}`);
         })
         .catch(err => {
             res.statusCode = 404;
             res.setHeader("Content-Type", "text/plain");
-            res.end(err.message)
+            res.end("Invalid PUT request")
             console.log(err);
         })
     })
 }
 
-// Using callbacks without making a promise
-// function handlePOST(req, res) {
-//     let body = ""
-//     req.on("data", chunk => {
-//         body += chunk.toString();
-//     });
-//     req.on("end", () => {
-//         body = JSON.parse(body);
-//         fs.open(`./.data${req.url}.json`, 'r+', (err, fileDescriptor) => {
-//             if (err) {
-//                 res.statusCode = 404;
-//                 res.setHeader("Content-Type", "text/plain");
-//                 res.end(err.message)
-//                 return console.log(err);
-//             } 
-//             fs.readFile(fileDescriptor, "utf-8", (err, data) => {
-//                 data = JSON.parse(data);
-//                 data[(Object.keys(data).length + 1) + ""] = body;
-//                 var stringData = JSON.stringify(data, null, "\t");
-//                 console.log(stringData);
-//                 fs.writeFile(fileDescriptor, stringData, function (err) {
-//                     if (!err) {
-//                         fs.close(fileDescriptor, function (err) {
-//                             if (!err) {
-//                                 console.log(false);
-//                             } else {
-//                                 console.log("Error closing file");
-//                             }
-//                         })
-//                     } else {
-//                         console.log("Error updating file");
-//                     }
-//                     res.statusCode = 200;
-//                     res.setHeader("Content-Type", "text/plain");
-//                     res.end(JSON.stringify(body, null, "\t"));
-//                 })
-//             })
-//         })
-//     })
-// }
-
-function handleGET(req, res) {
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "text/plain");
-    res.end("You made a GET request");
-}
-
-function handlePUT(req, res) {
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "text/plain");
-    res.end("You made a PUT request");
-}
-
 function handleDELETE(req, res) {
-    res.statusCode = 200;
-    res.setHeader("Content-Type", "text/plain");
-    res.end("You made a DELETE request");
+    unlink(`./.data${req.url}.json`)
+    .then(() => {
+        let id = req.url.split("/")[2];
+        res.statusCode = 200;
+        res.setHeader("Content-Type", "text/plain");
+        res.end(`Successfully deleted user with id = ${id}`);
+    })
+    .catch(err => {
+        res.statusCode = 404;
+        res.setHeader("Content-Type", "text/plain");
+        res.end("Student not found or invalid request");
+        console.log(err);
+    })
+}
+
+function parsejsonObject (str){
+    try {
+        var obj = JSON.parse(str);
+        return obj;
+    } catch (error) {
+        return {}
+    }
 }

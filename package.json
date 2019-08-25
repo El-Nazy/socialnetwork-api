@@ -1,19 +1,19 @@
 {
   "name": "socialnetwork-api",
   "version": "1.0.0",
-  "description": "A basic socialnetwork api Please run npm install",
+  "description": "A basic student api Please run npm install",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/El-Nazy/socialnetwork-api.git"
+    "url": "git+https://github.com/El-Nazy/student-api.git"
   },
   "author": "Emmanuel Ngene",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/El-Nazy/socialnetwork-api/issues"
+    "url": "https://github.com/El-Nazy/student-api/issues"
   },
-  "homepage": "https://github.com/El-Nazy/socialnetwork-api#readme"
+  "homepage": "https://github.com/El-Nazy/student-api#readme"
 }
