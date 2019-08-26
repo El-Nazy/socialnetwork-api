@@ -8,6 +8,7 @@ const writeFile = promisify(fs.writeFile);
 const readFile = promisify(fs.readFile);
 const close = promisify(fs.close);
 const unlink = promisify(fs.unlink);
+const readdir = promisify(fs.readdir);
 
 const port = 3000;
 const host = "localhost";
@@ -70,6 +71,27 @@ function handlePOST(req, res) {
 
 function handleGET(req, res) {
     let fd;
+    if (req.url == "/students"){
+        const dir = './.data/students';
+
+        readdir("./.data/students")
+        .then(files => {
+            let responseBody = ""
+            for (file of files) {
+                if (file == "lastID.txt") continue;
+                data = fs.readFileSync(`./.data/students/${file}`, "utf-8")
+                console.log("in here")
+                responseBody += `id = ${file.split(".")[0]} : ${data}\n`;
+                console.log(data);
+                console.log(`./.data/students/${file}`, typeof file);
+            }
+            console.log(responseBody)
+            res.statusCode = 200;
+            res.setHeader("Content-Type", "application/json");
+            res.end(responseBody);
+        });
+        return;
+    }
     open(`./.data${req.url}.json`, 'r+')
     .then(fileDescriptor => {
         fd = fileDescriptor
