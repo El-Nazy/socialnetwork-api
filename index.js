@@ -132,7 +132,12 @@ function handlePUT(req, res) {
             // Check if the property-names of Object sent tally with Object requested
             for (key of Object.keys(body)) {
                 if (!data.hasOwnProperty(key)) {
-                    throw new Error(`Invalid property name "${key}"`);
+                    res.statusCode = 400;
+                    res.setHeader("Content-Type", "text/plain");
+                    res.end(`Invalid property name "${key}"`);
+                    return;
+                    // console.log(err);
+                    // throw new Error(`Invalid property name "${key}"`);
                 }
             }
             
